@@ -1,14 +1,8 @@
 import httpx
-from dataclasses import dataclass
+
+from src.scanners.models import Vulnerability
 
 OSV_API_URL = "https://api.osv.dev/v1/query"
-
-@dataclass
-class Vulnerability:
-    id: str
-    summary: str
-    severity: str | None
-    details: str | None
 
 def query_vulnerabilities(package_name: str, version: str | None, ecosystem: str = "PyPI") -> list[Vulnerability]:
     """Query OSV API for vulnerabilities in a package."""

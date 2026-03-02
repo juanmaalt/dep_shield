@@ -7,6 +7,7 @@ from src.parsers.requirements import parse_requirements
 from src.scanners.code_scanner import scan_project
 from src.scanners.osv import query_vulnerabilities
 from src.rag.analyzer import analyze_impact
+from src.rag.models import PackageInfo
 
 app = typer.Typer()
 console = Console()
@@ -53,7 +54,8 @@ def scan(path: str, analyze: bool = typer.Option(False, "--analyze", "-a", help=
                 rprint(f"       {truncate(vuln.summary, 80)}")
                 
                 if analyze:
-                    impact = analyze_impact(vuln, usages)
+                    package_info = PackageInfo(dep.name, dep.version)
+                    impact = analyze_impact(vuln, usages, package_info)
                     rprint(f"   [bold]🤖 Impact Analysis:[/bold]")
                     
                     risk_color = get_risk_color(impact.risk_level)

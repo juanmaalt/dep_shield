@@ -1,16 +1,10 @@
 import re
 from pathlib import Path
-from dataclasses import dataclass
+
+from src.scanners.models import CodeUsage
 
 IGNORED_DIRS = {'.venv', 'venv', '__pycache__', '.git', 'node_modules', '.eggs', 'build', 'dist'}
 
-
-@dataclass
-class CodeUsage:
-    file_path: str
-    line_number: int
-    line_content: str
-    import_type: str
 
 def find_python_files(directory: Path) -> list[Path]:
     if not directory.exists():
