@@ -265,9 +265,9 @@ wheels = [
 ]
 
 [[package]]
-name = "dep-shield"
+name = "dep_shield"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "chromadb" },
     { name = "httpx" },
