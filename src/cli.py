@@ -4,14 +4,15 @@ from rich.console import Console
 from rich import print as rprint
 
 from src.parsers.requirements import parse_requirements
-from src.scanners.osv import query_vulnerabilities
 from src.scanners.code_scanner import scan_project
+from src.scanners.osv import query_vulnerabilities
+from src.rag.analyzer import analyze_impact
 
 app = typer.Typer()
 console = Console()
 
 @app.command()
-def scan(path: str):
+def scan(path: str, analyze: bool = typer.Option(False, "--analyze", "-a", help="Analyze impact using LLM")):
     """Scan a project for vulnerable dependencies."""
     project_path = Path(path)
     
@@ -41,17 +42,25 @@ def scan(path: str):
         if vulns:
             vulnerable_count += 1
             version_str = dep.version or "any"
-            rprint(f"[red]⚠️  {dep.name} {version_str}[/red]")
+            project_dir = project_path if project_path.is_dir() else project_path.parent
+            usages = scan_project(project_dir, dep.name)
             
+            rprint(f"[red]⚠️  {dep.name} {version_str}[/red]")
             for vuln in vulns:
                 severity_color = get_severity_color(vuln.severity)
                 severity_display = vuln.severity or "UNKNOWN"
                 rprint(f"   └── [{severity_color}]{vuln.id}[/{severity_color}] ({severity_display})")
                 rprint(f"       {truncate(vuln.summary, 80)}")
-            
-            project_dir = project_path if project_path.is_dir() else project_path.parent
-            usages = scan_project(project_dir, dep.name)
-            
+                
+                if analyze:
+                    impact = analyze_impact(vuln, usages)
+                    rprint(f"   [bold]🤖 Impact Analysis:[/bold]")
+                    
+                    risk_color = get_risk_color(impact.risk_level)
+                    rprint(f"      Risk: [{risk_color}]{impact.risk_level}[/{risk_color}]")
+                    rprint(f"      {impact.explanation}")
+                    rprint(f"      [dim]Recommendation: {impact.recommendation}[/dim]")
+
             if usages:
                 rprint(f"   [cyan]📍 Used in:[/cyan]")
                 for usage in usages:
@@ -81,6 +90,15 @@ def get_severity_color(severity: str | None) -> str:
         return "yellow"
     else:
         return "blue"
+    
+def get_risk_color(risk_level: str) -> str:
+    colors = {
+        "HIGH": "red",
+        "MEDIUM": "yellow",
+        "LOW": "blue",
+        "NONE": "green",
+    }
+    return colors.get(risk_level, "white")
 
 def truncate(text: str, max_length: int) -> str:
     """Truncate text to max length."""
