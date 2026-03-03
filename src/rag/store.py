@@ -42,12 +42,7 @@ def add_cve(cve_id: str, description: str, package: str, version: str, risk_leve
     )
 
 
-def search_similar(
-    query: str,
-    k: int = 3,
-    threshold: float = 0.35,
-    exclude_id: str | None = None,
-) -> list[SimilarCVE]:
+def search_similar(query: str, top_k: int = 3, threshold: float = 0.35, exclude_id: str | None = None) -> list[SimilarCVE]:
     collection = _get_collection()
     count = collection.count()
     if count == 0:
@@ -56,7 +51,7 @@ def search_similar(
     embedding = get_embedding(query)
     results = collection.query(
         query_embeddings=[embedding],
-        n_results=min(k, count),
+        n_results=min(top_k, count),
     )
 
     return [

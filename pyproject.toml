@@ -1,7 +1,7 @@
 [project]
 name = "dep_shield"
 version = "0.1.0"
-description = "Add your description here"
+description = "Python dependency vulnerability scanner using the OSV database with AI-powered impact analysis"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
