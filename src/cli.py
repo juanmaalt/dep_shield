@@ -4,6 +4,7 @@ from rich.console import Console
 from rich import print as rprint
 
 from src.parsers.requirements import parse_requirements
+from src.parsers.pyproject import parse_pyproject
 from src.scanners.code_scanner import scan_project
 from src.scanners.osv import query_vulnerabilities
 from src.rag.analyzer import analyze_impact
@@ -16,19 +17,19 @@ console = Console()
 def scan(path: str, analyze: bool = typer.Option(False, "--analyze", "-a", help="Analyze impact using LLM")):
     """Scan a project for vulnerable dependencies."""
     project_path = Path(path)
-    
-    if project_path.is_file():
-        requirements_file = project_path
-    else:
-        requirements_file = project_path / "requirements.txt"
-    
-    if not requirements_file.exists():
-        rprint(f"[red]Error:[/red] No requirements.txt found in {path}")
+
+    dep_files = discover_dep_files(project_path)
+
+    if not dep_files:
+        rprint(f"[red]Error:[/red] No requirements.txt or pyproject.toml found in {path}")
         raise typer.Exit(1)
-    
-    rprint(f"\n[bold]🔍 Scanning dependencies in {requirements_file}...[/bold]\n")
-    
-    dependencies = parse_requirements(requirements_file)
+
+    rprint(f"\n[bold]Scanning dependencies in:[/bold]")
+    for f in dep_files:
+        rprint(f"  - {f}")
+    rprint()
+
+    dependencies = load_dependencies(dep_files)
     
     if not dependencies:
         rprint("[yellow]No dependencies found.[/yellow]")
@@ -79,6 +80,29 @@ def scan(path: str, analyze: bool = typer.Option(False, "--analyze", "-a", help=
     else:
         rprint("[bold green]No vulnerabilities found![/bold green]")
         raise typer.Exit(0)
+
+def discover_dep_files(project_path: Path) -> list[Path]:
+    if project_path.is_file():
+        return [project_path]
+    candidates = ["requirements.txt", "pyproject.toml"]
+    return [project_path / name for name in candidates if (project_path / name).exists()]
+
+
+def load_dependencies(dep_files: list[Path]):
+    seen = set()
+    dependencies = []
+    for f in dep_files:
+        if f.name == "pyproject.toml":
+            parsed = parse_pyproject(f)
+        else:
+            parsed = parse_requirements(f)
+        for dep in parsed:
+            key = dep.name.lower()
+            if key not in seen:
+                seen.add(key)
+                dependencies.append(dep)
+    return dependencies
+
 
 def get_severity_color(severity: str | None) -> str:
     """Return color based on severity."""
