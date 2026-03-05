@@ -7,8 +7,9 @@ A Python dependency vulnerability scanner that detects known CVEs in your projec
 ## How does it work?
 
 ```
-requirements.txt → dependency list → OSV API → vulnerabilities
-                                                      ↓
+requirements.txt  ↘
+                   dependency list → OSV API → vulnerabilities
+pyproject.toml    ↗                                   ↓
                                         Python files → import scanner → code usage
                                                       ↓
                                           (--analyze only, skipped if not imported)
@@ -18,7 +19,7 @@ requirements.txt → dependency list → OSV API → vulnerabilities
                                     ChromaDB (RAG vector store)
 ```
 
-1. Parse `requirements.txt` to extract package names and versions
+1. Discover and parse `requirements.txt` and/or `pyproject.toml` (PEP 621 and Poetry formats) to extract package names and versions; duplicates across files are deduplicated
 2. Query the OSV API for each dependency to find known CVEs
 3. For each vulnerable dependency, scan all `.py` files to detect import statements and usage locations
 4. If `--analyze` is set and the package is imported, retrieve similar past CVEs from ChromaDB and call GPT-4o-mini with CVE details + import context; if the package is not imported anywhere the LLM call is skipped and risk is reported as `NONE`
@@ -74,7 +75,7 @@ OPENAI_API_KEY=sk-...
 ## Usage
 
 ```bash
-# Scan a project directory or requirements.txt
+# Scan a project directory (auto-detects requirements.txt and/or pyproject.toml)
 uv run dep_shield <path>
 
 # Scan with AI-powered impact analysis
@@ -86,6 +87,7 @@ uv run dep_shield <path> --analyze
 ```bash
 uv run dep_shield .
 uv run dep_shield ./requirements.txt --analyze
+uv run dep_shield ./pyproject.toml --analyze
 uv run dep_shield /path/to/project -a
 ```
 
@@ -97,7 +99,8 @@ uv run dep_shield /path/to/project -a
 src/
 ├── cli.py                  # Typer CLI entry point
 ├── parsers/
-│   └── requirements.py     # requirements.txt parser
+│   ├── requirements.py     # requirements.txt parser
+│   └── pyproject.py        # pyproject.toml parser (PEP 621 + Poetry)
 ├── scanners/
 │   ├── models.py           # Vulnerability and CodeUsage dataclasses
 │   ├── osv.py              # OSV API client (async httpx)
