@@ -111,6 +111,22 @@ src/
     ├── embeddings.py       # Embedding generation
     ├── models.py           # Pydantic models (ImpactAnalysis, SimilarCVE)
     └── store.py            # ChromaDB store management
+tests/
+├── parsers/
+│   ├── test_requirements.py
+│   └── test_pyproject.py
+└── scanners/
+    ├── test_osv.py
+    └── test_code_scanner.py
+```
+
+---
+
+## Running Tests
+
+```bash
+uv sync --group dev
+uv run pytest
 ```
 
 ---

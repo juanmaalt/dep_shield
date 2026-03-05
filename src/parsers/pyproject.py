@@ -10,12 +10,12 @@ def parse_pyproject(file_path: Path) -> list[Dependency]:
         data = tomllib.load(f)
 
     dependencies = []
-    dependencies.extend(_parse_pep621(data))
-    dependencies.extend(_parse_poetry(data))
+    dependencies.extend(parse_pep621(data))
+    dependencies.extend(parse_poetry(data))
     return dependencies
 
 
-def _parse_pep621(data: dict) -> list[Dependency]:
+def parse_pep621(data: dict) -> list[Dependency]:
     raw_deps = data.get("project", {}).get("dependencies", [])
     deps = []
     for raw in raw_deps:
@@ -25,18 +25,18 @@ def _parse_pep621(data: dict) -> list[Dependency]:
     return deps
 
 
-def _parse_poetry(data: dict) -> list[Dependency]:
+def parse_poetry(data: dict) -> list[Dependency]:
     raw_deps = data.get("tool", {}).get("poetry", {}).get("dependencies", {})
     deps = []
     for name, constraint in raw_deps.items():
         if name.lower() == "python":
             continue
-        version = _extract_poetry_version(constraint)
+        version = extract_poetry_version(constraint)
         deps.append(Dependency(name=name, version=version, raw=f"{name} = {constraint!r}"))
     return deps
 
 
-def _extract_poetry_version(constraint) -> str | None:
+def extract_poetry_version(constraint) -> str | None:
     if isinstance(constraint, str):
         # Strip leading ^, ~, >=, etc. to get a bare version, or keep as-is
         return re.sub(r'^[\^~]', '', constraint) or None
